@@ -1,0 +1,10 @@
+services:
+  studytree:
+    build: .
+    ports:
+      - "8787:8787"
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CLAUDE_MODEL: ${CLAUDE_MODEL:-claude-opus-5-5}
+      CLAUDE_EFFORT: ${CLAUDE_EFFORT:-medium}
+    restart: unless-stopped
