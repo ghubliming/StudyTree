@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>StudyTree — Investor Deck</title>
+<meta name="description" content="StudyTree: AI tutoring for textbooks and slides, organised as a tree on the page." />
+<link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #141826; --ink-2: #4a5263; --ink-3: #7b8394; --line: #e3e6ee; --soft: #f4f6fb;
+    --blue: #2f5bea; --blue-2: #e8eefe; --amber: #f5b700; --green: #18a058; --red: #d03050; --violet: #8a4bd8; --teal: #00a0b0;
+    --bg: #dfe3ec; --chrome: #ffffff; --chrome-ink: #141826;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --bg: #0e1016; --chrome: #171a22; --chrome-ink: #e8eaf0; }
+  }
+  :root[data-theme="dark"] { --bg: #0e1016; --chrome: #171a22; --chrome-ink: #e8eaf0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: var(--ink); -webkit-font-smoothing: antialiased; }
+
+  /* ---------- web chrome */
+  .bar { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 10px; padding: 10px 16px; background: var(--chrome); color: var(--chrome-ink); border-bottom: 1px solid rgb(127 127 127 / 0.2); }
+  .bar .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; }
+  .bar .brand img { width: 22px; height: 22px; }
+  .bar .sp { flex: 1; }
+  .bar a, .bar button { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 14px; border-radius: 8px; border: 1px solid rgb(127 127 127 / 0.3); background: transparent; color: inherit; font: 600 13px Inter, system-ui, sans-serif; text-decoration: none; cursor: pointer; white-space: nowrap; }
+  .bar a.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .bar .count { font-size: 13px; opacity: 0.7; min-width: 56px; text-align: center; }
+  .deck { display: flex; flex-direction: column; align-items: center; gap: 22px; padding: 22px 16px 60px; }
+  .frame { width: min(1280px, 100%); aspect-ratio: 16 / 9; position: relative; overflow: hidden; border-radius: 10px; box-shadow: 0 10px 30px rgb(0 0 0 / 0.18); background: #fff; }
+  .frame > .slide { position: absolute; top: 0; left: 0; transform-origin: 0 0; transform: scale(var(--s, 1)); }
+  body.present { overflow: hidden; }
+  body.present .bar { display: none; }
+  body.present .deck { position: fixed; inset: 0; z-index: 20; background: #000; display: grid; place-items: center; padding: 0; }
+  body.present .frame { display: none; }
+  body.present .frame.cur { display: block; width: min(100vw, calc(100vh * 16 / 9)); border-radius: 0; box-shadow: none; cursor: pointer; }
+  @media (max-width: 640px) { .bar .hide-sm { display: none; } .bar { padding: 8px 10px; gap: 6px; } .bar a, .bar button { padding: 0 10px; } }
+
+  /* ---------- slide canvas (1280 × 720) */
+  .slide { width: 1280px; height: 720px; padding: 64px 72px; background: #fff; color: var(--ink); overflow: hidden; display: flex; flex-direction: column; }
+  .slide h1 { font-size: 64px; line-height: 1.04; letter-spacing: -0.035em; margin: 0; font-weight: 800; }
+  .slide h2 { font-size: 40px; line-height: 1.1; letter-spacing: -0.025em; margin: 0 0 8px; font-weight: 800; }
+  .slide h3 { font-size: 20px; margin: 0 0 6px; letter-spacing: -0.01em; }
+  .slide p { margin: 0; }
+  .kicker { font-size: 14px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--blue); margin-bottom: 14px; }
+  .lead { font-size: 22px; line-height: 1.45; color: var(--ink-2); max-width: 980px; }
+  .muted { color: var(--ink-3); }
+  .foot { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; font-size: 12px; color: var(--ink-3); gap: 24px; }
+  .src { font-size: 11px; color: var(--ink-3); line-height: 1.45; }
+  .src a { color: var(--ink-3); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .card { background: var(--soft); border: 1px solid var(--line); border-radius: 16px; padding: 22px; }
+  .card p { font-size: 17px; line-height: 1.55; color: var(--ink-2); }
+  .num { font-size: 52px; font-weight: 800; letter-spacing: -0.03em; color: var(--blue); line-height: 1; }
+  .shot { border-radius: 12px; border: 1px solid var(--line); box-shadow: 0 12px 30px rgb(16 24 40 / 0.14); display: block; width: 100%; object-fit: cover; object-position: top left; }
+  .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--blue-2); color: var(--blue); }
+  .fill { background: #fff4b8; color: #6b5300; border: 1px dashed #c9a200; border-radius: 6px; padding: 0 6px; font-weight: 600; }
+  ul.clean { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+  ul.clean li { font-size: 19px; line-height: 1.45; color: var(--ink-2); padding-left: 30px; position: relative; }
+  ul.clean li::before { content: ""; position: absolute; left: 4px; top: 10px; width: 12px; height: 12px; border-radius: 4px; background: var(--blue); }
+  ul.clean.x li::before { background: var(--red); }
+  b, strong { color: var(--ink); }
+
+  /* cover */
+  .cover { background: radial-gradient(1200px 600px at 85% 20%, #e8eefe 0%, #fff 60%); }
+  .cover .logo { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 24px; }
+  .cover .logo img { width: 44px; height: 44px; }
+  .cover .tag { font-size: 26px; line-height: 1.4; color: var(--ink-2); max-width: 720px; margin-top: 22px; }
+
+  /* tree diagram */
+  .tree text { font-family: Inter, system-ui, sans-serif; }
+
+  /* table */
+  table.cmp { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 18px; }
+  table.cmp th, table.cmp td { padding: 15px 12px; border-bottom: 1px solid var(--line); text-align: center; }
+  table.cmp th { font-size: 15px; color: var(--ink-3); font-weight: 600; vertical-align: bottom; line-height: 1.3; }
+  table.cmp td:first-child, table.cmp th:first-child { text-align: left; }
+  table.cmp td:first-child { font-weight: 600; }
+  table.cmp td:first-child span { display: block; font-weight: 400; font-size: 14px; color: var(--ink-3); }
+  table.cmp tr.us td { background: var(--blue-2); font-weight: 700; }
+  table.cmp tr.us td:first-child { border-radius: 10px 0 0 10px; }
+  table.cmp tr.us td:last-child { border-radius: 0 10px 10px 0; }
+  .y { color: var(--green); font-weight: 800; font-size: 22px; }
+  .p { color: #b07d00; font-weight: 800; font-size: 22px; }
+  .n { color: #b8bfcc; font-weight: 700; }
+
+  .step { display: flex; flex-direction: column; gap: 10px; }
+  .step .ix { width: 30px; height: 30px; border-radius: 50%; background: var(--blue); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: 15px; }
+  .crop { height: 210px; border-radius: 12px; border: 1px solid var(--line); box-shadow: 0 12px 30px rgb(16 24 40 / 0.14); background-repeat: no-repeat; background-color: #fff; }
+  .step p { font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+
+  .tier { display: flex; flex-direction: column; gap: 10px; }
+  .tier .price { font-size: 38px; font-weight: 800; letter-spacing: -0.02em; }
+  .tier ul { margin: 0; padding-left: 20px; color: var(--ink-2); font-size: 18px; line-height: 1.75; }
+  .tier.hi { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .tier.hi ul, .tier.hi p, .tier.hi b, .tier.hi .muted { color: #e6ecff; }
+
+  .road { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .road .col h3 { display: flex; align-items: center; gap: 8px; }
+  .road .col ul { margin: 0; padding-left: 18px; color: var(--ink-2); font-size: 17px; line-height: 1.75; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+  .bar-chart { display: flex; flex-direction: column; gap: 14px; }
+  .bar-row { display: grid; grid-template-columns: 210px 1fr 90px; align-items: center; gap: 14px; font-size: 15px; color: var(--ink-2); }
+  .bar-row .b { height: 26px; border-radius: 6px; background: var(--blue); }
+  .bar-row .v { font-weight: 700; color: var(--ink); }
+
+  /* ---------- print / PDF: one slide per page, no chrome */
+  @page { size: 1280px 720px; margin: 0; }
+  @media print {
+    body { background: #fff; }
+    .bar { display: none !important; }
+    .deck { display: block; padding: 0; }
+    .frame { width: 1280px; height: 720px; aspect-ratio: auto; border-radius: 0; box-shadow: none; break-after: page; page-break-after: always; }
+    .frame > .slide { transform: none; }
+  }
+</style>
+</head>
+<body>
+<header class="bar">
+  <span class="brand"><img src="../favicon.svg" alt="" />StudyTree <span class="hide-sm" style="font-weight:500;opacity:.6">· investor deck</span></span>
+  <span class="sp"></span>
+  <span class="count" id="count">1 / 15</span>
+  <button type="button" id="present" title="Present full screen (P)">▶ <span class="hide-sm">Present</span></button>
+  <a href="StudyTree-Pitch-Deck.pdf" download class="hide-sm">⬇ PDF</a>
+  <a href="../" class="primary">Live demo ↗</a>
+</header>
+
+<main class="deck" id="deck">
+
+<!-- 1 · Cover -->
+<section class="frame"><div class="slide cover">
+  <div class="logo"><img src="../favicon.svg" alt="" />StudyTree</div>
+  <div style="margin-top:auto">
+    <div class="kicker">AI tutoring for textbooks &amp; lecture slides</div>
+    <h1>Every question about a textbook,<br />organised as a tree<br />on the page it's about.</h1>
+    <p class="tag">Highlight a passage or box a diagram, ask, branch, and pin the answers back onto the page. Every learner leaves with a study map instead of a lost chat scroll.</p>
+  </div>
+  <div class="foot" style="margin-top:40px">
+    <span><b>Live demo:</b> ghubliming.github.io/StudyTree</span>
+    <span>Investor deck · <span class="fill">[Month Year]</span></span>
+  </div>
+</div></section>
+
+<!-- 2 · Problem -->
+<section class="frame"><div class="slide">
+  <div class="kicker">The problem</div>
+  <h2>AI chat made reading <em>easier</em> to ask about,<br />and <em>harder</em> to learn from.</h2>
+  <div class="grid2" style="margin-top:34px; align-items:start">
+    <ul class="clean x">
+      <li><b>Answers live in a side panel</b>, disconnected from the sentence or figure they explain.</li>
+      <li><b>One long linear scroll.</b> Every follow-up, tangent and retry piles up; good explanations get buried.</li>
+      <li><b>Exploring alternatives destroys context.</b> “Explain it simpler” and “give an example” compete for the same thread.</li>
+      <li><b>Nothing goes back into the book.</b> The PDF you revise from has none of what you learned.</li>
+    </ul>
+    <div class="card" style="background:#fff">
+      <h3>What research on reading tools says</h3>
+      <p style="margin-top:6px">A 2025 study of AI margin notes argues that comments tied to specific text beat chat in a separate side panel, because the side panel disconnects the discussion from its context.</p>
+      <p style="margin-top:14px">HCI work in 2026 (Branchat, CanvasConvo, Conversation Tree Architecture) shows learners need <b>branching</b>, revisitable conversations, but these are research prototypes, not reading products.</p>
+    </div>
+  </div>
+  <div class="foot"><span class="src">Sources: arXiv 2509.09840 (AI margin notes in document readers); ACM 10.1145/3772363.3798792 (Branchat); arXiv 2605.15848 (CanvasConvo); arXiv 2603.21278 (Conversation Tree Architecture).</span><span>2</span></div>
+</div></section>
+
+<!-- 3 · Solution -->
+<section class="frame"><div class="slide">
+  <div class="kicker">The solution</div>
+  <h2>A study tree that lives on the page.</h2>
+  <p class="lead">Each page holds topics. Each topic holds a discussion that can branch, and every branch ends in a leaf. The best answers become notes pinned exactly where they belong.</p>
+  <svg class="tree" viewBox="0 0 1136 400" width="1136" height="400" style="margin-top:22px" role="img" aria-label="Page to topic to branching discussion to notes">
+    <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#9aa3b5"/></marker></defs>
+    <g stroke="#9aa3b5" stroke-width="2" fill="none" marker-end="url(#ar)">
+      <path d="M170,200 C215,200 215,110 262,110" /><path d="M170,200 C215,200 215,290 262,290" />
+      <path d="M452,110 L500,110" /><path d="M690,110 C730,110 730,60 772,60" /><path d="M690,110 C730,110 730,160 772,160" />
+      <path d="M962,60 L1000,60" />
+      <path d="M452,290 L500,290" />
+    </g>
+    <g stroke="#f5b700" stroke-width="2" fill="none" stroke-dasharray="5 5"><path d="M595,135 C595,230 760,240 772,262" /></g>
+    <rect x="10" y="150" width="160" height="100" rx="14" fill="#141826"/><text x="90" y="192" fill="#fff" font-size="15" font-weight="700" text-anchor="middle">PAGE 3</text><text x="90" y="216" fill="#c9cfdd" font-size="13" text-anchor="middle">the PDF / slide</text>
+    <rect x="262" y="70" width="190" height="80" rx="12" fill="#ede4ff" stroke="#8a4bd8" stroke-width="2"/><text x="280" y="102" fill="#8a4bd8" font-size="13" font-weight="800">T5 · TOPIC</text><text x="280" y="124" fill="#141826" font-size="14">“learning rate” passage</text>
+    <rect x="262" y="250" width="190" height="80" rx="12" fill="#e8eefe" stroke="#2f5bea" stroke-width="2"/><text x="280" y="282" fill="#2f5bea" font-size="13" font-weight="800">T4 · REGION</text><text x="280" y="304" fill="#141826" font-size="14">boxed diagram (image)</text>
+    <rect x="500" y="80" width="190" height="60" rx="12" fill="#f4f6fb" stroke="#cfd4de" stroke-width="1.5"/><text x="516" y="106" fill="#7b8394" font-size="12" font-weight="700">YOU → TUTOR</text><text x="516" y="126" fill="#141826" font-size="14">How do I tune it?</text>
+    <rect x="772" y="30" width="190" height="60" rx="12" fill="#f4f6fb" stroke="#cfd4de" stroke-width="1.5"/><text x="788" y="56" fill="#7b8394" font-size="12" font-weight="700">BRANCH 1</text><text x="788" y="76" fill="#141826" font-size="14">…and if it's too high?</text>
+    <rect x="772" y="130" width="190" height="60" rx="12" fill="#f4f6fb" stroke="#18a058" stroke-width="2"/><text x="788" y="156" fill="#18a058" font-size="12" font-weight="700">BRANCH 2 · LEAF</text><text x="788" y="176" fill="#141826" font-size="14">What's a schedule?</text>
+    <circle cx="1018" cy="60" r="16" fill="#fff" stroke="#18a058" stroke-width="2.5"/><text x="1040" y="65" fill="#18a058" font-size="13" font-weight="700">leaf</text>
+    <rect x="500" y="260" width="190" height="60" rx="12" fill="#f4f6fb" stroke="#cfd4de" stroke-width="1.5"/><text x="516" y="286" fill="#7b8394" font-size="12" font-weight="700">YOU → TUTOR</text><text x="516" y="306" fill="#141826" font-size="14">How many weights?</text>
+    <rect x="772" y="232" width="250" height="96" rx="6" fill="#fff4b8" stroke="#c9a200" stroke-width="1.5"/><text x="788" y="258" fill="#6b5300" font-size="12" font-weight="800">📝 NOTE PINNED ON PAGE 3</text><text x="788" y="282" fill="#141826" font-size="14">η too high → overshoot / NaN</text><text x="788" y="304" fill="#141826" font-size="14">η too low → crawl. Decay it.</text>
+  </svg>
+  <div class="foot"><span>Main = the page · Topic = what you asked about · Sub = the discussion · Leaves = where each line of thought ended</span><span>3</span></div>
+</div></section>
+
+<!-- 4 · Product -->
+<section class="frame"><div class="slide" style="padding-bottom:40px">
+  <div style="display:flex; align-items:baseline; gap:18px">
+    <div class="kicker" style="margin:0">The product</div>
+    <h2 style="font-size:32px; margin:0">Outline · page · discussion: one screen.</h2>
+  </div>
+  <img class="shot" src="img/app-workspace.jpg" alt="StudyTree workspace" style="margin-top:20px; height:530px" />
+  <div class="foot" style="margin-top:12px"><span><b>Left:</b> the study tree (page → topic → thread endings). <b>Centre:</b> highlights, T-badges and a pinned note on the page. <b>Right:</b> the discussion, with “branch 2/2” switching.</span><span>4</span></div>
+</div></section>
+
+<!-- 5 · How it works -->
+<section class="frame"><div class="slide">
+  <div class="kicker">How it works</div>
+  <h2>Four moves, zero lost context.</h2>
+  <div class="grid4" style="margin-top:26px">
+    <div class="step"><span class="ix">1</span><div class="crop" role="img" aria-label="Selecting text shows Ask AI, Explain, Highlight, Note" style="background-image:url(img/app-select.jpg); background-size:330%; background-position:43% 34%"></div><h3>Select or box</h3><p>Highlight text, or box a diagram, formula or table. The tutor sees the page, its neighbours and the image.</p></div>
+    <div class="step"><span class="ix">2</span><div class="crop" role="img" aria-label="Tutor answer about a boxed diagram" style="background-image:url(img/app-region.jpg); background-size:364%; background-position:100% 32%"></div><h3>Ask in context</h3><p>Grounded, streamed answers with maths. Quick actions: explain simply, example, quiz me, key terms.</p></div>
+    <div class="step"><span class="ix">3</span><div class="crop" role="img" aria-label="Tree map of a branching discussion" style="background-image:url(img/app-map.jpg); background-size:364%; background-position:100% 36%"></div><h3>Branch freely</h3><p>Retry, edit or “branch here” forks the thread instead of overwriting it. The tree map shows every path.</p></div>
+    <div class="step"><span class="ix">4</span><div class="crop" role="img" aria-label="Exported PDF page with highlights and badges" style="background-image:url(img/export-page.jpg); background-size:150%; background-position:15% 41%"></div><h3>Pin &amp; keep</h3><p>Pin answers as notes on the page, then export an annotated PDF that carries the whole session.</p></div>
+  </div>
+  <div class="foot"><span>Works with PDF textbooks and PPT/PPTX/Keynote/Word (converted on the server).</span><span>5</span></div>
+</div></section>
+
+<!-- 6 · Export -->
+<section class="frame"><div class="slide">
+  <div class="kicker">The learning stays with the document</div>
+  <h2>Export that a PDF can actually hold.</h2>
+  <div class="grid2" style="margin-top:22px; grid-template-columns: 1.05fr 1fr; gap:34px">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px">
+      <img class="shot" src="img/export-page.jpg" alt="Annotated page" style="height:450px; object-position:top" />
+      <img class="shot" src="img/export-appendix.jpg" alt="Study notes appendix" style="height:450px; object-position:top" />
+    </div>
+    <ul class="clean" style="align-self:center">
+      <li><b>Annotated PDF</b> for any reader: highlights, T-badges, note boxes, real PDF comments.</li>
+      <li><b>Study-notes appendix</b> with every discussion and branch; badges link in, headings link back.</li>
+      <li><b>Session embedded inside the PDF:</b> drop it back into StudyTree and every topic, branch and note returns.</li>
+      <li><b>Lossless <code>.studytree</code> pack</b> (original + full tree) and Markdown for Notion or Obsidian.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>A shared PDF is also a distribution channel: every recipient can re-open the session in StudyTree.</span><span>6</span></div>
+</div></section>
+
+<!-- 7 · Why now -->
+<section class="frame"><div class="slide">
+  <div class="kicker">Why now</div>
+  <h2>The model got good. The interface didn't.</h2>
+  <div class="grid3" style="margin-top:34px">
+    <div class="card"><h3>Models can tutor</h3><p>Current LLMs read a page, follow a highlighted passage and explain diagrams from an image of them. Grounded tutoring is now a UI problem, not a model problem.</p></div>
+    <div class="card"><h3>Chat-with-PDF is commoditised</h3><p>Adobe, NotebookLM and many “chat with your PDF” tools offer Q&amp;A with citations. Answering is table stakes; <b>organising and keeping</b> what was learned is open.</p></div>
+    <div class="card"><h3>Research points the way</h3><p>2025–26 HCI papers show anchored notes and branching conversation trees help readers, but no reading product ships them together yet.</p></div>
+  </div>
+  <div class="foot"><span class="src">See competition slide for products reviewed and sources.</span><span>7</span></div>
+</div></section>
+
+<!-- 8 · Market -->
+<section class="frame"><div class="slide">
+  <div class="kicker">Market</div>
+  <h2>Hundreds of millions of learners read from PDFs and slides.</h2>
+  <div class="grid2" style="margin-top:30px; grid-template-columns: 0.9fr 1.1fr; gap:40px">
+    <div class="card" style="display:flex; flex-direction:column; gap:22px">
+      <div><div class="num">269M</div><p style="margin-top:6px">students in higher education worldwide (2024), up from ~100M in 2000. <span class="muted">UNESCO</span></p></div>
+      <div><div class="num">$5.8B – $48.6B</div><p style="margin-top:6px">range of 2030 forecasts for the “AI in education” market; analysts define the market very differently. <span class="muted">MarketsandMarkets; Research and Markets</span></p></div>
+    </div>
+    <div>
+      <h3>Illustrative bottom-up (assumption, not a forecast)</h3>
+      <p class="muted" style="font-size:15px; margin-bottom:18px">Annual revenue = paying students × $6 / month × 12</p>
+      <div class="bar-chart">
+        <div class="bar-row"><span>0.1% of HE students (≈ 0.27M)</span><span class="b" style="width:4%"></span><span class="v">≈ $19M</span></div>
+        <div class="bar-row"><span>0.5% (≈ 1.35M)</span><span class="b" style="width:20%"></span><span class="v">≈ $97M</span></div>
+        <div class="bar-row"><span>1% (≈ 2.7M)</span><span class="b" style="width:40%"></span><span class="v">≈ $194M</span></div>
+        <div class="bar-row"><span>2.5% (≈ 6.7M)</span><span class="b" style="width:100%"></span><span class="v">≈ $484M</span></div>
+      </div>
+      <p class="muted" style="font-size:14px; margin-top:18px">Excludes institutional licences, K-12, professional certification and corporate training, all adjacent segments that use the same workflow.</p>
+    </div>
+  </div>
+  <div class="foot"><span class="src">UNESCO Higher Education Global Trends Report (May 2026), via thepienews.com · MarketsandMarkets “AI in Education” (Aug 2025): $5.82B by 2030 · Research and Markets (Feb 2025): $48.6B by 2030.</span><span>8</span></div>
+</div></section>
+
+<!-- 9 · Competition -->
+<section class="frame"><div class="slide">
+  <div class="kicker">Competition</div>
+  <h2>Others answer questions. We organise the learning.</h2>
+  <table class="cmp" style="margin-top:18px">
+    <thead><tr>
+      <th style="width:30%"></th><th>AI Q&amp;A grounded<br />in the document</th><th>Answers anchored<br />to the passage</th><th>Branching<br />discussion tree</th><th>Notes pinned<br />on the page</th><th>PDF export that<br />keeps the discussions</th>
+    </tr></thead>
+    <tbody>
+      <tr><td>Chat-with-PDF tools<span>Adobe AI Assistant, ChatPDF and similar</span></td><td class="y">✓</td><td class="p">~</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+      <tr><td>NotebookLM<span>Google</span></td><td class="y">✓</td><td class="p">~</td><td class="n">—</td><td class="n">—</td><td class="n">—</td></tr>
+      <tr><td>Glasp PDF chat<span>highlights + chat</span></td><td class="y">✓</td><td class="p">~</td><td class="n">—</td><td class="p">~</td><td class="n">—</td></tr>
+      <tr><td>LiquidText, MarginNote<span>annotation-first readers</span></td><td class="p">~</td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="p">~</td></tr>
+      <tr><td>Branchat, CanvasConvo<span>research prototypes, no document</span></td><td class="n">—</td><td class="n">—</td><td class="y">✓</td><td class="n">—</td><td class="n">—</td></tr>
+      <tr class="us"><td>StudyTree</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td></tr>
+    </tbody>
+  </table>
+  <div class="foot"><span class="src">✓ core feature · ~ partial (e.g. citations or highlights as context) · — not found on public product pages or forums reviewed in Oct 2026; may change. Sources: adobe.com/acrobat/online/ai-chat-pdf · glasp.co/pdf-chat · LiquidText &amp; MarginNote App Store pages and user forums · ACM 10.1145/3772363.3798792 · arXiv 2605.15848.</span><span>9</span></div>
+</div></section>
+
+<!-- 10 · Business model -->
+<section class="frame"><div class="slide">
+  <div class="kicker">Business model <span class="pill" style="margin-left:8px">proposed · to validate in pilots</span></div>
+  <h2>Freemium for students, licences for institutions.</h2>
+  <div class="grid3" style="margin-top:30px">
+    <div class="card tier"><b style="font-size:18px">Free</b><div class="price">$0</div><ul><li>Unlimited documents, topics, branches, notes</li><li>Limited AI answers per month</li><li>All exports</li></ul></div>
+    <div class="card tier hi"><b style="font-size:18px">Student Pro</b><div class="price"><span class="fill" style="color:#6b5300">[$X]</span> / month</div><ul><li>Generous AI answers, best model</li><li>Region / diagram questions</li><li>Sync across devices</li><li>Exam-prep: quizzes from your tree</li></ul></div>
+    <div class="card tier"><b style="font-size:18px">Institution</b><div class="price">per seat / year</div><ul><li>Instructor-shared course packs</li><li>LMS integration, SSO</li><li>Data stays in-region; local-first by design</li><li>Learning analytics on where students get stuck</li></ul></div>
+  </div>
+  <div class="foot"><span>AI cost scales with usage; tree-scoped context (one page + one topic) keeps each request small.</span><span>10</span></div>
+</div></section>
+
+<!-- 11 · Go-to-market -->
+<section class="frame"><div class="slide">
+  <div class="kicker">Go-to-market</div>
+  <h2>Course by course, PDF by PDF.</h2>
+  <div class="grid3" style="margin-top:30px">
+    <div class="card"><h3>1 · Courses with heavy readings</h3><p>Start in university STEM and law courses where students live in PDFs and slide decks. Instructors seed a course pack with pinned explanations.</p></div>
+    <div class="card"><h3>2 · Built-in sharing loop</h3><p>Every exported PDF carries its session. A classmate who receives it can open the full study tree in StudyTree, so the product travels with the document.</p></div>
+    <div class="card"><h3>3 · Land and expand</h3><p>Student adoption in a department gives proof for a paid institutional licence: SSO, LMS integration and analytics.</p></div>
+  </div>
+  <div class="card" style="margin-top:24px; background:#fff"><p><b>Pilot plan:</b> <span class="fill">[N]</span> courses at <span class="fill">[institutions]</span> over <span class="fill">[term]</span>. Measure weekly active learners, topics per student, notes pinned, export/share rate and exam-prep usage.</p></div>
+  <div class="foot"><span></span><span>11</span></div>
+</div></section>
+
+<!-- 12 · Status & roadmap -->
+<section class="frame"><div class="slide">
+  <div class="kicker">Where we are</div>
+  <h2>A working product, live today.</h2>
+  <div class="road" style="margin-top:28px">
+    <div class="col card"><h3><span class="dot" style="background:var(--green)"></span>Shipped (MVP)</h3><ul>
+      <li>PDF + PPT/PPTX/Word import</li><li>Text and region (image) questions</li><li>Branching threads, outline, tree map</li><li>Notes on the page</li><li>Annotated PDF, study pack, Markdown</li><li>Claude-powered tutor; offline demo mode</li><li>Public demo on GitHub Pages; Docker; CI</li></ul></div>
+    <div class="col card"><h3><span class="dot" style="background:var(--blue)"></span>Next 6 months</h3><ul>
+      <li>Accounts and cloud sync</li><li>Shared course packs for instructors</li><li>Quiz / spaced repetition from the tree</li><li>OCR for scanned books; CJK fonts in export</li><li>Pilots with <span class="fill">[N]</span> courses</li></ul></div>
+    <div class="col card"><h3><span class="dot" style="background:var(--violet)"></span>12 months +</h3><ul>
+      <li>LMS integrations (Canvas, Moodle) and SSO</li><li>Instructor analytics: where the class gets stuck</li><li>Mobile and tablet with pen input</li><li>Institutional licences</li></ul></div>
+  </div>
+  <div class="foot"><span>Traction: <span class="fill">[users / pilots / waitlist, add when available]</span></span><span>12</span></div>
+</div></section>
+
+<!-- 13 · Team -->
+<section class="frame"><div class="slide">
+  <div class="kicker">Team</div>
+  <h2>Who is building this.</h2>
+  <div class="grid3" style="margin-top:34px">
+    <div class="card"><h3><span class="fill">[Founder name]</span></h3><p><span class="fill">[Role, e.g. CEO]</span></p><p style="margin-top:10px"><span class="fill">[Relevant background: education, product, domain]</span></p></div>
+    <div class="card"><h3><span class="fill">[Co-founder name]</span></h3><p><span class="fill">[Role, e.g. CTO]</span></p><p style="margin-top:10px"><span class="fill">[Relevant background]</span></p></div>
+    <div class="card"><h3>Advisors</h3><p><span class="fill">[Educators / EdTech operators]</span></p></div>
+  </div>
+  <p class="muted" style="margin-top:30px; font-size:15px">Yellow fields are placeholders. Fill them in before sharing this deck.</p>
+  <div class="foot"><span></span><span>13</span></div>
+</div></section>
+
+<!-- 14 · Ask -->
+<section class="frame"><div class="slide">
+  <div class="kicker">The ask</div>
+  <h2>Raising <span class="fill">[$ amount]</span> <span class="fill">[pre-seed / seed]</span>.</h2>
+  <div class="grid2" style="margin-top:30px">
+    <div class="card"><h3>Use of funds <span class="muted" style="font-weight:400">(example split, adjust)</span></h3>
+      <div class="bar-chart" style="margin-top:14px">
+        <div class="bar-row" style="grid-template-columns:150px 1fr 50px"><span>Product &amp; engineering</span><span class="b" style="width:100%"></span><span class="v"><span class="fill">[%]</span></span></div>
+        <div class="bar-row" style="grid-template-columns:150px 1fr 50px"><span>Pilots &amp; growth</span><span class="b" style="width:60%; background:var(--green)"></span><span class="v"><span class="fill">[%]</span></span></div>
+        <div class="bar-row" style="grid-template-columns:150px 1fr 50px"><span>AI usage costs</span><span class="b" style="width:35%; background:var(--amber)"></span><span class="v"><span class="fill">[%]</span></span></div>
+        <div class="bar-row" style="grid-template-columns:150px 1fr 50px"><span>Operations</span><span class="b" style="width:20%; background:var(--violet)"></span><span class="v"><span class="fill">[%]</span></span></div>
+      </div>
+    </div>
+    <div class="card"><h3>Milestones this round buys</h3>
+      <ul class="clean" style="margin-top:12px">
+        <li>Accounts, sync and course sharing in production</li>
+        <li>Pilots in <span class="fill">[N]</span> courses with measured retention</li>
+        <li>First institutional licence(s)</li>
+        <li><span class="fill">[Target]</span> monthly active learners</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span></span><span>14</span></div>
+</div></section>
+
+<!-- 15 · Close -->
+<section class="frame"><div class="slide cover">
+  <div class="logo"><img src="../favicon.svg" alt="" />StudyTree</div>
+  <div style="margin-top:auto">
+    <h1>Try it now.</h1>
+    <p class="tag" style="font-size:30px; color:var(--blue); font-weight:700">ghubliming.github.io/StudyTree</p>
+    <p class="tag">Open the sample chapter: six topics, branching discussions and pinned notes are ready to explore. Select any sentence and ask.</p>
+  </div>
+  <div class="foot" style="margin-top:40px"><span><span class="fill">[name@email.com]</span> · <span class="fill">[phone / LinkedIn]</span></span><span>Thank you</span></div>
+</div></section>
+
+</main>
+
+
+<script>
+(() => {
+  const deck = document.getElementById("deck");
+  const frames = [...deck.querySelectorAll(".frame")];
+  const count = document.getElementById("count");
+  let cur = 0;
+  let presenting = false;
+  const fit = (f) => {
+    f.style.setProperty("--s", f.clientWidth / 1280);
+    // Chrome can keep stale SVG text positions after a scale change; force a re-layout.
+    f.querySelectorAll("svg").forEach((svg) => {
+      svg.style.display = "none";
+      void svg.getBoundingClientRect();
+      svg.style.display = "";
+    });
+  };
+  const fitAll = () => frames.forEach(fit);
+  const label = () => (count.textContent = `${cur + 1} / ${frames.length}`);
+  new ResizeObserver(fitAll).observe(document.body);
+  fitAll();
+
+  const io = new IntersectionObserver((es) => {
+    if (presenting) return;
+    for (const e of es) if (e.isIntersecting) { cur = frames.indexOf(e.target); label(); }
+  }, { threshold: 0.6 });
+  frames.forEach((f) => io.observe(f));
+
+  // Presentation mode: the real slide, alone and full screen (no copies).
+  const show = (i) => {
+    frames[cur].classList.remove("cur");
+    cur = Math.max(0, Math.min(frames.length - 1, i));
+    frames[cur].classList.add("cur");
+    fit(frames[cur]);
+    label();
+  };
+  const present = (on) => {
+    presenting = on;
+    document.body.classList.toggle("present", on);
+    if (on) { show(cur); document.documentElement.requestFullscreen?.().catch(() => {}); }
+    else {
+      frames[cur].classList.remove("cur");
+      if (document.fullscreenElement) document.exitFullscreen?.();
+      requestAnimationFrame(() => { fitAll(); frames[cur].scrollIntoView({ block: "center" }); });
+    }
+  };
+  document.getElementById("present").addEventListener("click", () => present(true));
+  deck.addEventListener("click", (e) => { if (presenting) show(cur + (e.clientX > innerWidth / 2 ? 1 : -1)); });
+  addEventListener("resize", () => presenting && fit(frames[cur]));
+  document.addEventListener("fullscreenchange", () => { if (!document.fullscreenElement && presenting) present(false); });
+  addEventListener("keydown", (e) => {
+    if (e.key === "p" || e.key === "P") return present(!presenting);
+    if (e.key === "Escape" && presenting) return present(false);
+    const next = ["ArrowRight", "ArrowDown", "PageDown", " "].includes(e.key);
+    const prev = ["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key);
+    if (!next && !prev) return;
+    e.preventDefault();
+    const i = cur + (next ? 1 : -1);
+    if (presenting) show(i);
+    else frames[Math.max(0, Math.min(frames.length - 1, i))].scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+})();
+</script>
+</body>
+</html>

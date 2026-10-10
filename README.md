@@ -80,6 +80,16 @@ For the full experience with a shared server-side key and slide conversion, depl
 
 The server enables Claude's server-side refusal fallback on supported models and caches the tutor's system prompt.
 
+## Investor deck
+
+- **Web (roadshow):** `https://<owner>.github.io/<repo>/pitch/`. Scroll through, or press **P** to present full screen
+  (← → to move, Esc to exit). Buttons link to the PDF and the live demo.
+- **PDF:** [`public/pitch/StudyTree-Pitch-Deck.pdf`](public/pitch/StudyTree-Pitch-Deck.pdf), 15 slides, 16:9.
+- **Source:** `public/pitch/index.html` (one file for both). After editing it, run
+  `CHROME_PATH=/path/to/chrome npm run pitch` to regenerate the PDF.
+- Yellow `[…]` fields (team, raise, pricing, pilots, contact) are placeholders to fill in before sending. Market figures
+  and competitor notes cite their sources on the slides; the bottom-up revenue chart is labelled as an assumption.
+
 ## Customer demo script (5 minutes)
 
 1. **Library** → *Try the sample: Chapter 3 — Neural Networks*. It opens with six topics, branches and notes already
