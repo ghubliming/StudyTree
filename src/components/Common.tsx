@@ -1,19 +1,27 @@
 import { useState } from "react";
-import { useStore } from "../store/useStore";
+import { setShowAiSettings, useStore } from "../store/useStore";
 import { Icon } from "./Icon";
 
 export function AiBadge() {
   const health = useStore((s) => s.health);
-  if (!health) return <span className="badge" title="The server is not reachable">
-    <span className="dot" /> AI offline
-  </span>;
+  if (!health) return null;
   const live = health.ai.mode === "live";
+  const label = live ? `AI live · ${health.ai.model}` : health.backend === "browser" ? "Demo tutor · add API key" : "Demo tutor";
+  const title = live
+    ? `Answers by ${health.ai.model}`
+    : health.backend === "browser"
+      ? "Answers come from a built-in demo tutor. Click to use your own Anthropic API key for real AI answers."
+      : "No ANTHROPIC_API_KEY on the server — a built-in demo tutor answers from the page text";
+  if (health.backend === "browser") {
+    return (
+      <button className={`badge ${live ? "live" : "demo"}`} style={{ border: 0, cursor: "pointer" }} title={title} onClick={() => setShowAiSettings(true)}>
+        <span className="dot" /> {label}
+      </button>
+    );
+  }
   return (
-    <span
-      className={`badge ${live ? "live" : "demo"}`}
-      title={live ? `Answers by ${health.ai.model}` : "No ANTHROPIC_API_KEY on the server — a built-in demo tutor answers from the page text"}
-    >
-      <span className="dot" /> {live ? `AI live · ${health.ai.model}` : "Demo tutor"}
+    <span className={`badge ${live ? "live" : "demo"}`} title={title}>
+      <span className="dot" /> {label}
     </span>
   );
 }

@@ -53,6 +53,20 @@ Docker (includes LibreOffice for slide conversion):
 docker compose up --build     # reads ANTHROPIC_API_KEY from your shell or .env
 ```
 
+### Online demo (GitHub Pages)
+
+The workflow `.github/workflows/pages.yml` publishes a **static** build of the app to
+`https://<owner>.github.io/<repo>/` on every push to the default branch. GitHub Pages has no server, so in that build:
+
+- the **demo tutor runs in the browser**; visitors can click **“Demo tutor · add API key”** and paste their own
+  Anthropic API key for real Claude answers (stored only in their browser, sent only to `api.anthropic.com`);
+- PowerPoint/Word upload is disabled (save slides as PDF first); everything else, including exports, works.
+
+One-time setup: **Settings → Pages → Build and deployment → Source: GitHub Actions**, then re-run the
+“Deploy demo to GitHub Pages” workflow from the **Actions** tab.
+
+For the full experience with a shared server-side key and slide conversion, deploy the Node server or Docker image.
+
 ### Configuration
 
 | Variable | Default | |
@@ -99,6 +113,7 @@ A PDF can only show so much on a page, so StudyTree saves in layers:
 ## Architecture
 
 ```
+shared/tutorCore.ts  tutor prompts, Claude streaming call and demo tutor (used by server and static build)
 server/            Express API (Node, TypeScript)
   index.ts         /api/health, /api/chat (SSE streaming), /api/convert (LibreOffice), static hosting
   tutor.ts         Claude prompt building + streaming, demo tutor

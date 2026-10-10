@@ -1,3 +1,4 @@
+import { AiSettingsDialog } from "./components/AiSettingsDialog";
 import { Library } from "./components/Library";
 import { Workspace } from "./components/Workspace";
 import { useStore } from "./store/useStore";
@@ -6,9 +7,11 @@ export function App() {
   const view = useStore((s) => s.view);
   const busy = useStore((s) => s.busy);
   const toasts = useStore((s) => s.toasts);
+  const showAi = useStore((s) => s.showAiSettings);
   return (
     <>
       {view === "library" ? <Library /> : <Workspace />}
+      {showAi && <AiSettingsDialog />}
       {busy && (
         <div className="busy" role="status">
           <div className="busy-card">

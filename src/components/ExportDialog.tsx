@@ -21,7 +21,7 @@ function safeName(title: string) {
 
 let fontCache: Promise<{ regular: Uint8Array; bold: Uint8Array } | undefined> | null = null;
 function loadFonts() {
-  fontCache ??= Promise.all(["/fonts/DejaVuSans.ttf", "/fonts/DejaVuSans-Bold.ttf"].map((u) => fetch(u).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject()))))
+  fontCache ??= Promise.all(["fonts/DejaVuSans.ttf", "fonts/DejaVuSans-Bold.ttf"].map((u) => fetch(import.meta.env.BASE_URL + u).then((r) => (r.ok ? r.arrayBuffer() : Promise.reject()))))
     .then(([a, b]) => ({ regular: new Uint8Array(a), bold: new Uint8Array(b) }))
     .catch(() => undefined);
   return fontCache;

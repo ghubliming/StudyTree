@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { fetchHealth, streamChat, type ChatPayload, type Health, type TutorMode } from "../lib/ai";
+import { browserHealth, fetchHealth, saveBrowserAiSettings, streamChat, type ChatPayload, type Health, type TutorMode } from "../lib/ai";
 import * as db from "../lib/db";
 import { uid } from "../lib/id";
 import { closePdf, cropRegion, loadPdf, pageText, readAttachments, thumbnail, type PDFDocumentProxy } from "../lib/pdf";
@@ -42,6 +42,7 @@ interface State {
   scrollTo: { page: number; y?: number; nonce: number } | null;
   composerNonce: number;
   showExport: boolean;
+  showAiSettings: boolean;
   /** Note currently in edit mode on the page. */
   editingNoteId: string | null;
   selectedNoteId: string | null;
@@ -69,6 +70,7 @@ const initial: State = {
   scrollTo: null,
   composerNonce: 0,
   showExport: false,
+  showAiSettings: false,
   editingNoteId: null,
   selectedNoteId: null,
   leftOpen: true,
@@ -270,10 +272,13 @@ export async function importFile(file: File) {
         id = await createDocFromPdf(bytes, { title: titleFromFile(file.name), fileName: file.name, sourceType: "pdf" });
       }
     } else if (SLIDE_EXTS.has(ext)) {
+      if (!get().health?.convert) {
+        throw new Error("This demo has no conversion server. Export the slides to PDF (File → Save as PDF) and upload the PDF.");
+      }
       set({ busy: `Converting ${file.name} to PDF…` });
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch("/api/convert", { method: "POST", body: form });
+      const res = await fetch(`${import.meta.env.BASE_URL}api/convert`, { method: "POST", body: form });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
         throw new Error((err as { error?: string }).error ?? "Conversion failed");
@@ -299,7 +304,7 @@ export async function openSample() {
   if (await db.getDoc(SAMPLE_ID)) return openDoc(SAMPLE_ID);
   set({ busy: "Loading sample chapter…" });
   try {
-    const res = await fetch("/samples/neural-networks.studytree");
+    const res = await fetch(`${import.meta.env.BASE_URL}samples/neural-networks.studytree`);
     if (!res.ok) throw new Error("Sample not found");
     const id = await importPack(await res.arrayBuffer(), true);
     await openDoc(id);
@@ -358,6 +363,15 @@ export function setEditingNote(id: string | null) {
 }
 export function selectNote(id: string | null) {
   set({ selectedNoteId: id });
+}
+export function setShowAiSettings(v: boolean) {
+  set({ showAiSettings: v });
+}
+/** Static hosting only: store the learner's own API key in this browser. */
+export function saveAiSettings(apiKey: string, model: string) {
+  saveBrowserAiSettings(apiKey.trim(), model.trim());
+  set({ health: browserHealth(), showAiSettings: false });
+  toast(apiKey.trim() ? "Live AI enabled in this browser" : "Using the demo tutor", "success");
 }
 export function setShowExport(v: boolean) {
   set({ showExport: v });

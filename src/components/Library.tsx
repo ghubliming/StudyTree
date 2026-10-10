@@ -27,7 +27,7 @@ export function Library() {
     <div className="library">
       <header className="lib-header">
         <div className="brand">
-          <img src="/favicon.svg" alt="" />
+          <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" />
           StudyTree
         </div>
         <span className="spacer" />
@@ -69,7 +69,7 @@ export function Library() {
             <div className="big">Drop a PDF, slide deck or study pack</div>
             <div className="formats">
               PDF · PPT/PPTX · Keynote · Word · <b>.studytree</b>
-              {health && !health.convert && " (slides need LibreOffice on the server)"}
+              {health && !health.convert && (health.backend === "browser" ? " · slides: save as PDF first" : " (slides need LibreOffice on the server)")}
             </div>
             <button className="btn primary" type="button">
               <Icon name="file" /> Choose file
